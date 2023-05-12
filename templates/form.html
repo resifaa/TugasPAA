@@ -1,0 +1,257 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Ajax-Test</title> 
+	
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.18/css/jquery.dataTables.min.css"/>
+	<script src="https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min.js"></script>
+	<link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css">
+<script>
+	
+
+	
+  $(function() {
+    $('#btn_login').click(function(e) {
+		e.preventDefault();
+		v_data = 
+			{
+            "username": $("#username").val(),
+            "password":$("#password").val()
+			};
+			
+        $.ajax({
+            url: '/login_json',
+			data: JSON.stringify(v_data), 
+			processData: false,
+            type: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function(response) {
+                console.log(response);
+                //~ $("#info_login").html( JSON.stringify(response['success']));
+				$("#view_login").hide();
+				if(JSON.stringify(response['berhasil']) == '1')
+				{
+					$("#view_user").show();
+					
+					$("#str_token").html(response['msg']);
+					localStorage.setItem("jwt_token", response['msg']);
+					
+					//~ $('#example').DataTable( {
+						//~ data: response['msg'],
+						//~ columns: [
+							//~ { data: 'nama_user' },
+							//~ { data: 'password' },
+							//~ { data: 'id_person' },
+							//~ { data: 'kd_sts_aktif' }
+						//~ ]
+					//~ } );
+				}
+				else
+				{
+					alert(JSON.stringify(response['msg']));
+				}
+				
+				return false;
+            },
+            error: function(error) {
+                console.log(error);
+                $("#info_login").html(error['msg'].toString());
+				$("#view_login").show();
+				$("#view_user").show();
+				return false;
+            }
+        });
+    });
+    
+    
+    $('#btn_logout').click(function(e) {
+		e.preventDefault();
+		localStorage.removeItem("jwt_token");
+		localStorage.removeItem("data_users");	
+		$("#view_login").show();				
+		$("#view_user").hide();;
+		var table = $('#example').DataTable();
+		//clear datatable
+		table.clear().draw();
+		//destroy datatable
+		table.destroy();
+    });
+    
+});
+
+
+	function getUser()
+	{
+		const jwt_token = localStorage.getItem("jwt_token");
+			$.ajax({
+			type: "POST",
+			url: "/protected",
+			headers: {
+				Authorization: 'Bearer ' + jwt_token // $("#str_token").html()
+			},
+			dataType: 'json',
+			success: function (result, status, xhr) {
+						console.log(result);
+				$("#login_as").html(result['logged_in_as'].toString());
+				
+			},
+			error: function (xhr, status, error) {
+				 alert(error);
+			}
+		});
+	}
+
+	function getUserData()
+	{
+		const jwt_token = localStorage.getItem("jwt_token");
+			$.ajax({
+			type: "POST",
+			url: "/data_user",
+			headers: {
+				Authorization: 'Bearer ' + jwt_token //$("#str_token").html()
+			},
+			dataType: 'json',
+			success: function (result, status, xhr) {
+						console.log(result);
+				//$("#login_as").html(result['logged_in_as'].toString());
+				
+				localStorage.setItem("data_users", "1");
+				
+					$('#example').DataTable( {
+						data: result['data_users'],
+						columns: [
+							{ data: 'id' },
+							{ data: 'username' },
+							{ data: 'password' }
+						]
+					} );
+			},
+
+			error: function (xhr, status, error) {
+				 alert(error);
+			}
+		});
+
+	}
+	function getkonserData()
+	{
+			$.ajax({
+			type: "POST",
+			url: "/data_konser",
+			headers: {
+				Authorization: 'Bearer ' + $("#str_token").html()
+			},
+			dataType: 'json',
+			success: function (result, status, xhr) {
+						console.log(result);
+				//$("#login_as").html(result['logged_in_as'].toString());
+				
+				
+					$('#example2').DataTable( {
+						data: result['data_konser'],
+						columns: [
+							{ data: 'namakonser' },
+							{ data: 'tanggalmulai' },
+							{ data: 'tanggalselesai' },
+							{ data: 'section'},
+							{ data: 'harga'},
+						]
+					} );
+				
+				
+			},
+			error: function (xhr, status, error) {
+				 alert(error);
+			}
+		});
+	}
+
+function cekLocalStorage()
+{
+	const jwt_token = localStorage.getItem("jwt_token");
+	
+	//alert(jwt_token);
+	if(jwt_token != null)
+	{
+		$("#view_login").hide();				
+		$("#view_user").show();
+		
+		const data_users = localStorage.getItem("data_konser");		
+		if(data_users != null)
+		{
+			getUserData();
+		}
+	}
+	
+}
+
+    
+</script>
+<body style="padding: 30px; background-color: rgb(205, 164, 185);">
+	
+	<div id="view_login">	
+	<h1 style="text-align: center; font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; color: white; margin-top: 100px; font-size: 50px;">Flask JQuery Example</h1>
+			<div class="form-signin" action='/login' method="post" role="form">
+				 <h2 class="form-signin-heading", style="text-align: center; color: white; margin-top: 50px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">Please Login </h2>
+				 <input style="margin-top: 30px; border-radius: 20px; padding: 25px; width: 500px; position: absolute; top: 50%; left: 30%" type="text" name="username" id="username" class="form-control" placeholder="User name" required autofocus>
+				 <input style="margin-top: 8px; border-radius: 20px; padding: 25px; width:500px; position: absolute; top: 64%; left: 30%" password name="password" id="password" class="form-control" placeholder="Password" required>
+	 
+				 <input style="margin-top: 10px; border-radius: 20px; padding: 10px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; background-color: palevioletred; border: none; width: 500px; position: absolute; top: 74%; left: 30%;" button class="btn btn-lg btn-primary btn-block"  id="btn_login" value="Login"> </input>
+			</div>
+			 
+	</div>       
+ 
+<div id="view_user" style="display: none; border-color: palevioletred;">
+	
+	<div style="color: palevioletred;" class="row">
+		<div class="col-lg-12">
+			<div style="font-size: 20px; color: white; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">Token:</div>
+			<div id='str_token' style='word-wrap: break-word; color: white; margin-top: 5px; font-size: 10px;'></div>
+			
+			
+             <input style="border-radius: 20px;width: 300px; background-color: palevioletred; font-size: 15px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; border: none; margin-top: 5px;" type="button" class="btn btn-lg btn-primary btn-block"  id="btn_get_id" value="Get ID" onclick='getUser()'> </input>
+			
+			<div style="color: white; margin-top: 5px; font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">Login sebagai:</div>
+			<div id='login_as' style='word-wrap: break-word; color: white; margin-top: 5px;'></div>
+			
+             <input style="border-radius: 20px;width: 300px; background-color: palevioletred; font-size: 15px; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; border: none;"type="button" class="btn btn-lg btn-primary btn-block"  id="btn_get_data" value="Get Data" onclick='getUserData()'> </input>
+			
+			<table id="example" class="table-hover" style="width:100%; ">
+				<thead style="color: white; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; font-size: 15px;">
+					<tr style="color: white;">
+						<th>ID</th>
+						<th>Username</th>
+						<th>Password</th>
+						<th></th>
+					</tr>
+				</thead>
+			</table>
+			<input type="button" class="btn btn-lg btn-primary btn-block"  id="btn_get_peminjam" value="Get Data" onclick='getpeminjamData()'> </input>
+			
+			<table id="example2" class="table-hover" style="width:100%; ">
+				<thead>
+					<tr>
+						<th>Nama Konser</th>
+						<th>Tanggal Mulai</th>
+						<th>Tanggal Selesai</th>
+						<th>Section</th>
+						<th>Harga</th>
+					</tr>
+				</thead>
+			</table>
+			
+		</div>	
+	</div>	
+	<input style="color: palevioletred; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; border-radius: 20px; border: none; width: 100px; height: 40px;" type="button"   id="btn_logout" value="Logout"> </input>    
+          
+</div>
+
+	
+</body>
+</html>
